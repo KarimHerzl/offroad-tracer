@@ -1,0 +1,45 @@
+---context:global   # =====================================================
+# offroad-max.brf  ·  "Massimizza sterrato"  ·  Moto 200 kg
+# Offroad Planner — profilo BRouter (bozza v0.1, da validare al 1° avvio)
+#
+# OBIETTIVO: portare da A a B con la MASSIMA percentuale di sterrato,
+# accettando anche deviazioni molto lunghe. NON minimizza tempo/distanza.
+# ======================================================================
+
+# Quanto "costa" 1 metro di asfalto rispetto a 1 metro di sterrato.
+# Piu' alto = piu' sterrato (deviazioni piu' lunghe). Prova valori 15..40.
+assign avoid_asphalt = 25
+
+assign validForBikes = true
+
+
+---context:way   # =======================================================
+
+# --- 1) È ASFALTO / strada pavimentata? -------------------------------
+assign ispaved =
+  or  surface=asphalt|concrete|paved|paving_stones|sett|cobblestone
+  or  tracktype=grade1
+      highway=motorway|trunk|primary|secondary|tertiary|residential|living_street|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link
+
+# --- 2) DA ESCLUDERE (mai usato) --------------------------------------
+#   grade5 (tua regola), accessi vietati, vie non a motore.
+assign isblocked =
+  or  access=private|no
+  or  highway=footway|cycleway|pedestrian|steps
+      tracktype=grade5
+
+# --- 3) COSTO del segmento (moltiplica la lunghezza) ------------------
+#   bloccato             -> 10000  (mai)
+#   asfalto              -> avoid_asphalt (carissimo: solo come raccordo)
+#   track / bridleway    -> 1    (sterrato: preferito)
+#   unclassified/service -> 1.3  (bianche senza fondo: usate, "da verificare")
+#   path                 -> 3    (sentiero: usato solo se indispensabile)
+#   senza highway        -> 10000
+assign costfactor =
+  switch isblocked                     10000
+  switch ispaved                       avoid_asphalt
+  switch highway=track|bridleway       1
+  switch highway=unclassified|service  1.3
+  switch highway=path                  3
+  switch highway=                      10000
+  1.3
