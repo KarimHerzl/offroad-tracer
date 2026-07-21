@@ -1,0 +1,44 @@
+# ============================================================
+#  offroad-max.brf  -  "Massimizza sterrato"  -  Moto 200 kg
+#  Tracciatori Carbonari - profilo BRouter (v0.3)
+#
+#  variante LEGAL: esclude del tutto le vie con access=private/no.
+#  Le vie dubbie (grade5, access=private) costano molto ma restano
+#  percorribili: cosi' il motore trova alternative in montagna.
+#  La legalita' la segnala il colore nero sulla mappa, non il blocco.
+# ============================================================
+
+---context:global
+
+# Quanto "costa" 1 m di asfalto rispetto a 1 m di sterrato.
+assign avoid_asphalt = 25
+
+assign validForBikes = true
+assign validForFoot  = false
+assign validForCars  = false
+
+# la pendenza ora conta: le salite hanno un costo
+assign uphillcost   = 40
+assign downhillcost = 10
+assign uphillcutoff = 3
+
+assign turnInstructionMode = 0
+
+---context:way
+
+assign turncost = 0
+
+assign costfactor
+  switch highway=footway|pedestrian|steps                                            10000
+  switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=motorway|trunk|primary|secondary|tertiary|residential|living_street   avoid_asphalt
+  switch access=private|no                                                           10000
+  switch tracktype=grade5                                                            2
+  switch highway=track|bridleway                                                     1
+  switch highway=unclassified|service                                                1.3
+  switch highway=path                                                                3
+  switch highway=cycleway                                                            6
+  1.3
+
+---context:node
+
+assign initialcost = 0
