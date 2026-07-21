@@ -28,7 +28,7 @@ RUN cd segments4 \
     && wget -q https://brouter.de/brouter/segments4/E10_N40.rd5
 
 # 4) il NOSTRO profilo
-COPY offroad-max*.brf profiles2/
+COPY offroad-*.brf profiles2/
 
 # 5) proxy nginx + avvio
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
