@@ -18,10 +18,12 @@ assign validForFoot  = false
 assign validForCars  = false
 
 # la pendenza ora conta: le salite hanno un costo
-assign uphillcutoff   = 4
-assign downhillcutoff = 4
-assign uphillcost     = 120
-assign downhillcost   = 120
+# pendenza: sotto ~12% quasi nulla; oltre, il costo elevazione cresce forte.
+# a ~35%+ l'accumulo supera il costo dell'asfalto (25000/km) -> sceglie il bypass.
+assign uphillcost     = 250
+assign uphillcutoff   = 12
+assign downhillcost   = 200
+assign downhillcutoff = 14
 
 assign turnInstructionMode = 0
 
@@ -40,9 +42,6 @@ assign costfactor
   switch highway=path                                                                3
   switch highway=cycleway                                                            6
   1.3
-
-assign uphillcostfactor   multiply costfactor 20
-assign downhillcostfactor multiply costfactor 12
 
 ---context:node
 
