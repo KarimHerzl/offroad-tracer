@@ -18,10 +18,10 @@ assign validForFoot  = false
 assign validForCars  = false
 
 # la pendenza ora conta: le salite hanno un costo
-assign uphillcutoff   = 6
-assign downhillcutoff = 6
-assign uphillcost     = 60
-assign downhillcost   = 60
+assign uphillcutoff   = 4
+assign downhillcutoff = 4
+assign uphillcost     = 120
+assign downhillcost   = 120
 
 assign turnInstructionMode = 0
 
@@ -41,8 +41,8 @@ assign costfactor
   switch highway=cycleway                                                            6
   1.3
 
-assign uphillcostfactor   multiply costfactor 8
-assign downhillcostfactor multiply costfactor 5
+assign uphillcostfactor   multiply costfactor 20
+assign downhillcostfactor multiply costfactor 12
 
 ---context:node
 
