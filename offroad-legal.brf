@@ -29,7 +29,6 @@ assign turnInstructionMode = 0
 assign turncost = 0
 
 assign costfactor
-  switch ford=yes|stream|intermittent                                                10000
   switch highway=footway|pedestrian|steps                                            10000
   switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=motorway|trunk|primary|secondary|tertiary|residential|living_street   avoid_asphalt
   switch access=private|no                                                           10000
