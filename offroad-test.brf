@@ -18,10 +18,8 @@ assign validForFoot  = false
 assign validForCars  = false
 
 # la pendenza ora conta: le salite hanno un costo
-# --- pendenza ---
-# costi separati che scattano solo oltre la soglia (cutoff), cosi' le salite
-# normali non sono penalizzate ma il ripido estremo diventa molto caro.
-assign uphillcutoff   = 6      # sotto il 6% = terreno "piatto", nessuna penalita'
+# --- pendenza: penalita' forte solo oltre la soglia (salite normali non toccate) ---
+assign uphillcutoff   = 6
 assign downhillcutoff = 6
 assign uphillcost     = 60
 assign downhillcost   = 60
@@ -44,11 +42,11 @@ assign costfactor
   switch highway=cycleway                                                            6
   1.3
 
-# oltre il 6% di pendenza il costo sale molto: il motore evita i tratti ripidi
-# a meno che non esista davvero nessuna alternativa.
-assign uphillcostfactor   multiply costfactor 6
-assign downhillcostfactor multiply costfactor 4
+assign uphillcostfactor   multiply costfactor 8
+assign downhillcostfactor multiply costfactor 5
 
 ---context:node
 
-assign initialcost = 0
+assign initialcost =
+  switch ford=yes|stream|intermittent   1000000
+  0
