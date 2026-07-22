@@ -18,9 +18,10 @@ assign validForFoot  = false
 assign validForCars  = false
 
 # la pendenza ora conta: le salite hanno un costo
-assign uphillcost   = 40
-assign downhillcost = 10
-assign uphillcutoff = 3
+assign uphillcost     = 250
+assign uphillcutoff   = 12
+assign downhillcost   = 200
+assign downhillcutoff = 14
 
 assign turnInstructionMode = 0
 
@@ -42,4 +43,4 @@ assign costfactor
 
 ---context:node
 
-assign initialcost = 0
+assign initialcost switch ford=yes 1000000 0
