@@ -30,7 +30,7 @@ assign turnInstructionMode = 0
 assign turncost = 0
 
 assign costfactor
-  switch ford=unknown                                                                10000
+  switch ford=yes                                                                    10000
   switch highway=footway|pedestrian|steps                                            10000
   switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=motorway|trunk|primary|secondary|tertiary|residential|living_street   avoid_asphalt
   switch access=private|no                                                           8
@@ -41,6 +41,11 @@ assign costfactor
   switch highway=cycleway                                                            6
   1.3
 
+# LEVA PENDENZA EFFICACE: moltiplica il costo del tratto in base alla ripidita'.
+# a ~35%+ il moltiplicatore rende la rampa piu' cara di qualsiasi alternativa.
+assign uphillcostfactor   20
+assign downhillcostfactor  12
+
 ---context:node
 
-assign initialcost switch ford=unknown 1000000 0
+assign initialcost switch ford=yes 1000000 0
