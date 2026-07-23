@@ -11,15 +11,13 @@
 ---context:global
 
 # Quanto "costa" 1 m di asfalto rispetto a 1 m di sterrato.
-assign avoid_asphalt = 25
+assign avoid_asphalt = 75
 
 assign validForBikes = true
 assign validForFoot  = false
 assign validForCars  = false
 
 # la pendenza ora conta: le salite hanno un costo
-# pendenza: sotto ~12% quasi nulla; oltre, il costo elevazione cresce forte.
-# a ~35%+ l'accumulo supera il costo dell'asfalto (25000/km) -> sceglie il bypass.
 assign uphillcost     = 250
 assign uphillcutoff   = 12
 assign downhillcost   = 200
@@ -32,7 +30,7 @@ assign turnInstructionMode = 0
 assign turncost = 0
 
 assign costfactor
-  switch ford=yes                                                                    10000
+  switch ford=yes|unknown|stream|intermittent|seasonal|no                             10000
   switch highway=footway|pedestrian|steps                                            10000
   switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=motorway|trunk|primary|secondary|tertiary|residential|living_street   avoid_asphalt
   switch access=private|no                                                           8
@@ -45,4 +43,4 @@ assign costfactor
 
 ---context:node
 
-assign initialcost switch ford=yes 1000000 0
+assign initialcost switch ford=yes|unknown|stream|intermittent|seasonal|no 1000000 0
