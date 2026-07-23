@@ -1,5 +1,5 @@
 # ============================================================
-#  Offroad Planner â€” server BRouter per il cloud (Render)
+#  Offroad Planner — server BRouter per il cloud (Render)
 #  Contiene: BRouter + tessera dati E5_N45 (Nord Italia +
 #  confine alpino francese) + profilo "massimizza sterrato".
 #  Un nginx davanti fa da proxy e risolve la faccenda CORS.
@@ -19,7 +19,7 @@ RUN wget -q "https://github.com/abrensch/brouter/releases/download/v1.7.9/broute
 # 2) cartelle di lavoro
 RUN mkdir -p segments4 profiles2 customprofiles
 
-# 3) TESSERA DATI â€” per ora solo Nord Italia + confine alpino (leggera).
+# 3) TESSERA DATI — per ora solo Nord Italia + confine alpino (leggera).
 #    Per aggiungere costa/Nord-Est, scommenta le righe sotto.
 RUN cd segments4 \
     && wget -q https://brouter.de/brouter/segments4/E5_N45.rd5 \
@@ -29,6 +29,7 @@ RUN cd segments4 \
 
 # 4) il NOSTRO profilo
 COPY offroad-*.brf profiles2/
+COPY offroad-*.brf customprofiles/
 
 # 5) proxy nginx + avvio
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
