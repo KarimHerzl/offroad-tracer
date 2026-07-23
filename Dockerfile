@@ -29,7 +29,6 @@ RUN cd segments4 \
 
 # 4) il NOSTRO profilo
 COPY offroad-*.brf profiles2/
-COPY offroad-*.brf customprofiles/
 
 # 5) proxy nginx + avvio
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
