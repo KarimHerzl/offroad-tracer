@@ -1,48 +1,44 @@
 # ============================================================
 #  offroad-max-75.brf  -  "Massimizza sterrato"  -  Moto 200 kg
-#  Tracciatori Carbonari - profilo BRouter (v0.5)
+#  Tracciatori Carbonari - profilo BRouter (v0.6)
 #
-#  v0.3: NIENTE divieti assoluti (tranne scale/marciapiedi).
-#  Le vie dubbie (grade5, access=private) costano molto ma restano
-#  percorribili: cosi' il motore trova alternative in montagna.
-#  La legalita' la segnala il colore nero sulla mappa, non il blocco.
+#  v0.6 - GERARCHIA DI PREFERENZA ESPLICITA.
+#  Fino alla v0.5 sterrato e terra battuta costavano uguale (1) e la
+#  mulattiera (bridleway) costava 1 come una carrareccia: nessun ordine.
+#  Ora l'ordine e' scritto nei numeri, dal migliore al peggiore:
 #
-#  v0.4 introduceva "multiply" e variabili d'appoggio: BRouter rispondeva
-#  HTTP 500. v0.5 rifa' le stesse due correzioni usando SOLO i costrutti
-#  gia' presenti e funzionanti nella v0.3 (switch + or, numeri scritti).
+#     1.0   sterrato compatto (ghiaia, compacted, grade2/3)
+#     1.3   carrareccia senza tag  |  terra battuta (ground/dirt/earth)
+#     2.0   grade4  |  service
+#     3.0   grade5
+#     4.0   fondi molli: erba, sabbia, fango (con 200 kg si affonda)
+#     9.0   MULATTIERA / SENTIERO (path, bridleway) - l'incognita
+#    75   asfalto comunale
+#    112.5 tertiary   150 secondary   225 statali
 #
-#  (1) BUCO DELLE "unclassified". In v0.3 costavano 1.3, quasi quanto una
-#      carrareccia (1.0). Ma la pagina le classifica ASFALTO (in Monferrato
-#      le comunali minori sono quasi sempre asfaltate). Il motore le
-#      sceglieva credendole gratis e la mappa le dipingeva di rosso: da qui
-#      "troppo asfalto" e le deviazioni lunghissime. Ora costano come
-#      l'asfalto. residential e living_street c'erano gia'; mancava solo
-#      unclassified: era un buco, non una scelta.
+#  Cosi' il motore prova nell'ordine: sterrato -> terra -> fondi molli ->
+#  mulattiera -> asfalto. La mulattiera resta PREFERITA all'asfalto (9 < 75),
+#  ma smette di essere scelta al posto di una strada bianca disponibile:
+#  prima era 1, cioe' equivalente. E alzando lo slider l'asfalto cresce
+#  mentre la mulattiera resta a 9: con "Rifai" il motore passa prima per la
+#  mulattiera, e ricorre all'asfalto solo dove sterrato e mulattiera mancano.
 #
-#  (2) PROVA DI STERRATO PRIMA DELL'ASFALTO. Una via con surface o tracktype
-#      che dicono "non pavimentato" resta economica QUALUNQUE sia la sua
-#      classe. Senza questa riga si punirebbero anche le comunali davvero
-#      bianche: l'errore opposto.
-#
-#  (3) ASFALTO GRADUATO. Quando l'asfalto e' inevitabile il motore prende la
-#      strada MINORE invece della provinciale: per 200 kg e' anche piu'
-#      sicura. I valori sono scritti (niente moltiplicazioni): 75 per le
-#      comunali asfaltate, 112.5 tertiary, 150 secondary, 225 statali.
-#
-#  Il costo e' sempre AL METRO e initialcost resta 0: cosi' il motore
-#  minimizza i METRI di asfalto. Con una penalita' fissa all'ingresso
-#  preferirebbe una sola deviazione lunga a tre attraversamenti brevi.
+#  Restano dalla v0.5:
+#  - "unclassified" nel gruppo asfalto (era il buco che produceva i lunghi
+#    tratti rossi: costava 1.3 e il motore la sceglieva credendola bianca)
+#  - prova di sterrato valutata PRIMA dell'asfalto, cosi' una comunale con
+#    surface non pavimentato resta economica
+#  - asfalto graduato: quando e' inevitabile si preferisce la strada minore
+#  - costo AL METRO e initialcost 0: si minimizzano i METRI di asfalto
 # ============================================================
 ---context:global
-# Quanto "costa" 1 m di asfalto rispetto a 1 m di sterrato.
 assign avoid_asphalt = 75
 assign validForBikes = true
 assign validForFoot  = false
 assign validForCars  = false
-# la pendenza ora conta: le salite hanno un costo
 # NOTA: 250 e' alto. In Langa/Monferrato lo sterrato e' spesso piu' ripido
 # dell'asfalto di fondovalle, quindi spinge verso il piano = verso l'asfalto.
-# Se dopo la v0.5 resta troppo asfalto in zone mosse, prova 120-150.
+# Se resta troppo asfalto in zone mosse, prova 120-150.
 assign uphillcost     = 250
 assign uphillcutoff   = 12
 assign downhillcost   = 200
@@ -53,16 +49,24 @@ assign turncost = 0
 assign costfactor
   switch or ford=yes ford=unknown                                                    10000
   switch highway=footway|pedestrian|steps                                            10000
-  switch or surface=gravel|fine_gravel|compacted|unpaved|ground|dirt|earth|grass|sand|mud|pebblestone|rock tracktype=grade2|grade3|grade4|grade5   1
+  # --- MULATTIERE E SENTIERI: valutati PRIMA del fondo, altrimenti un sentiero
+  # con surface=ground verrebbe premiato come una strada in terra battuta.
+  switch highway=path|bridleway                                                      9
+  # --- gerarchia dei fondi, dal migliore al peggiore
+  switch or surface=gravel|fine_gravel|compacted|pebblestone|unpaved tracktype=grade2|grade3   1
+  switch surface=ground|dirt|earth                                                   1.3
+  switch surface=grass|sand|mud                                                      4
+  switch tracktype=grade4                                                            2
+  switch tracktype=grade5                                                            3
+  # --- asfalto graduato (la strada minore e' preferita alla provinciale)
   switch highway=motorway|trunk|primary                                              225
   switch highway=secondary                                                           150
   switch highway=tertiary                                                            112.5
   switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=unclassified|residential|living_street   avoid_asphalt
+  # --- resto
   switch access=private|no                                                           8
-  switch tracktype=grade5                                                            2
-  switch highway=track|bridleway                                                     1
-  switch highway=service                                                             1.3
-  switch highway=path                                                                3
+  switch highway=track                                                               1.3
+  switch highway=service                                                             2
   switch highway=cycleway                                                            6
   1.3
 ---context:node

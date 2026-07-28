@@ -1,46 +1,76 @@
 # ============================================================
-#  offroad-max.brf  -  "Massimizza sterrato"  -  Moto 200 kg
-#  Tracciatori Carbonari - profilo BRouter (v0.3)
+#  offroad-legal-25.brf  -  "Massimizza sterrato" LEGALE  -  Moto 200 kg
+#  Tracciatori Carbonari - profilo BRouter (v0.6)
 #
-#  variante LEGAL: esclude del tutto le vie con access=private/no.
-#  Le vie dubbie (grade5, access=private) costano molto ma restano
-#  percorribili: cosi' il motore trova alternative in montagna.
-#  La legalita' la segnala il colore nero sulla mappa, non il blocco.
+#  v0.6 - GERARCHIA DI PREFERENZA ESPLICITA.
+#  Fino alla v0.5 sterrato e terra battuta costavano uguale (1) e la
+#  mulattiera (bridleway) costava 1 come una carrareccia: nessun ordine.
+#  Ora l'ordine e' scritto nei numeri, dal migliore al peggiore:
+#
+#     1.0   sterrato compatto (ghiaia, compacted, grade2/3)
+#     1.3   carrareccia senza tag  |  terra battuta (ground/dirt/earth)
+#     2.0   grade4  |  service
+#     3.0   grade5
+#     4.0   fondi molli: erba, sabbia, fango (con 200 kg si affonda)
+#     9.0   MULATTIERA / SENTIERO (path, bridleway) - l'incognita
+#    25   asfalto comunale
+#    37.5 tertiary   50 secondary   75 statali
+#
+#  Cosi' il motore prova nell'ordine: sterrato -> terra -> fondi molli ->
+#  mulattiera -> asfalto. La mulattiera resta PREFERITA all'asfalto (9 < 25),
+#  ma smette di essere scelta al posto di una strada bianca disponibile:
+#  prima era 1, cioe' equivalente. E alzando lo slider l'asfalto cresce
+#  mentre la mulattiera resta a 9: con "Rifai" il motore passa prima per la
+#  mulattiera, e ricorre all'asfalto solo dove sterrato e mulattiera mancano.
+#
+#  Restano dalla v0.5:
+#  - "unclassified" nel gruppo asfalto (era il buco che produceva i lunghi
+#    tratti rossi: costava 1.3 e il motore la sceglieva credendola bianca)
+#  - prova di sterrato valutata PRIMA dell'asfalto, cosi' una comunale con
+#    surface non pavimentato resta economica
+#  - asfalto graduato: quando e' inevitabile si preferisce la strada minore
+#  - costo AL METRO e initialcost 0: si minimizzano i METRI di asfalto
+#  - variante LEGALE: access=private/no esclusa del tutto, e valutata
+#    PER PRIMA (in v0.3 stava dopo l'asfalto, quindi una privata
+#    asfaltata non veniva esclusa: buco vero in un profilo 'legale')
 # ============================================================
-
 ---context:global
-
-# Quanto "costa" 1 m di asfalto rispetto a 1 m di sterrato.
 assign avoid_asphalt = 25
-
 assign validForBikes = true
 assign validForFoot  = false
 assign validForCars  = false
-
-# la pendenza ora conta: le salite hanno un costo
+# NOTA: 250 e' alto. In Langa/Monferrato lo sterrato e' spesso piu' ripido
+# dell'asfalto di fondovalle, quindi spinge verso il piano = verso l'asfalto.
+# Se resta troppo asfalto in zone mosse, prova 120-150.
 assign uphillcost     = 250
 assign uphillcutoff   = 12
 assign downhillcost   = 200
 assign downhillcutoff = 14
-
 assign turnInstructionMode = 0
-
 ---context:way
-
 assign turncost = 0
-
 assign costfactor
   switch or ford=yes ford=unknown                                                    10000
   switch highway=footway|pedestrian|steps                                            10000
-  switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=motorway|trunk|primary|secondary|tertiary|residential|living_street   avoid_asphalt
   switch access=private|no                                                           10000
-  switch tracktype=grade5                                                            2
-  switch highway=track|bridleway                                                     1
-  switch highway=unclassified|service                                                1.3
-  switch highway=path                                                                3
+  # --- MULATTIERE E SENTIERI: valutati PRIMA del fondo, altrimenti un sentiero
+  # con surface=ground verrebbe premiato come una strada in terra battuta.
+  switch highway=path|bridleway                                                      9
+  # --- gerarchia dei fondi, dal migliore al peggiore
+  switch or surface=gravel|fine_gravel|compacted|pebblestone|unpaved tracktype=grade2|grade3   1
+  switch surface=ground|dirt|earth                                                   1.3
+  switch surface=grass|sand|mud                                                      4
+  switch tracktype=grade4                                                            2
+  switch tracktype=grade5                                                            3
+  # --- asfalto graduato (la strada minore e' preferita alla provinciale)
+  switch highway=motorway|trunk|primary                                              75
+  switch highway=secondary                                                           50
+  switch highway=tertiary                                                            37.5
+  switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=unclassified|residential|living_street   avoid_asphalt
+  # --- resto
+  switch highway=track                                                               1.3
+  switch highway=service                                                             2
   switch highway=cycleway                                                            6
   1.3
-
 ---context:node
-
 assign initialcost = 0
