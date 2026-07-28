@@ -1,6 +1,14 @@
 # ============================================================
 #  offroad-legal-45.brf  -  "Massimizza sterrato" LEGALE  -  Moto 200 kg
-#  Tracciatori Carbonari - profilo BRouter (v0.7)
+#  Tracciatori Carbonari - profilo BRouter (v0.8)
+#
+#  v0.8 - CICLABILE SPOSTATA IN CIMA. In v0.7 la riga highway=cycleway=10000
+#  c'era, ma stava DOPO la "prova di sterrato": una ciclabile su strada bianca
+#  (surface=compacted) veniva presa da quella riga e costava 1, cioe' il minimo
+#  possibile. Caso reale: il Sentiero della Bonifica in Val di Chiana, 27 km di
+#  strada bianca chiusa ai veicoli a motore, che il motore sceglieva come prima
+#  opzione. Gli switch li vince il PRIMO che scatta: le esclusioni devono stare
+#  tutte in cima, prima di qualsiasi valutazione del fondo.
 #
 #  v0.7 - CICLABILI ESCLUSE DAL CALCOLO (erano a 6, cioe' piu' economiche
 #  dell'asfalto: il motore ci infilava chilometri di pista ciclabile parallela
@@ -57,6 +65,7 @@ assign turncost = 0
 assign costfactor
   switch or ford=yes ford=unknown                                                    10000
   switch highway=footway|pedestrian|steps                                            10000
+  switch highway=cycleway                                                    10000
   switch access=private|no                                                           10000
   # --- MULATTIERE E SENTIERI: valutati PRIMA del fondo, altrimenti un sentiero
   # con surface=ground verrebbe premiato come una strada in terra battuta.
@@ -75,7 +84,6 @@ assign costfactor
   # --- resto
   switch highway=track                                                               1.3
   switch highway=service                                                             2
-  switch highway=cycleway                                                    10000
   1.3
 ---context:node
 assign initialcost = 0
