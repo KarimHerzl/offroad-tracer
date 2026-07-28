@@ -1,6 +1,11 @@
 # ============================================================
 #  offroad-max-75.brf  -  "Massimizza sterrato"  -  Moto 200 kg
-#  Tracciatori Carbonari - profilo BRouter (v0.6)
+#  Tracciatori Carbonari - profilo BRouter (v0.7)
+#
+#  v0.7 - CICLABILI ESCLUSE DAL CALCOLO (erano a 6, cioe' piu' economiche
+#  dell'asfalto: il motore ci infilava chilometri di pista ciclabile parallela
+#  alla provinciale). La pagina le marca NERE (vietate) da sempre; il profilo
+#  no. Ora costano 10000 come i marciapiedi: escluse.
 #
 #  v0.6 - GERARCHIA DI PREFERENZA ESPLICITA.
 #  Fino alla v0.5 sterrato e terra battuta costavano uguale (1) e la
@@ -67,7 +72,7 @@ assign costfactor
   switch access=private|no                                                           8
   switch highway=track                                                               1.3
   switch highway=service                                                             2
-  switch highway=cycleway                                                            6
+  switch highway=cycleway                                                    10000
   1.3
 ---context:node
 assign initialcost = 0
