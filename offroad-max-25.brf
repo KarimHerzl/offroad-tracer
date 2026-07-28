@@ -1,107 +1,69 @@
 # ============================================================
 #  offroad-max-25.brf  -  "Massimizza sterrato"  -  Moto 200 kg
-#  Tracciatori Carbonari - profilo BRouter (v0.4)
+#  Tracciatori Carbonari - profilo BRouter (v0.5)
 #
 #  v0.3: NIENTE divieti assoluti (tranne scale/marciapiedi).
 #  Le vie dubbie (grade5, access=private) costano molto ma restano
 #  percorribili: cosi' il motore trova alternative in montagna.
 #  La legalita' la segnala il colore nero sulla mappa, non il blocco.
 #
-#  v0.4 - due correzioni, una decisiva:
+#  v0.4 introduceva "multiply" e variabili d'appoggio: BRouter rispondeva
+#  HTTP 500. v0.5 rifa' le stesse due correzioni usando SOLO i costrutti
+#  gia' presenti e funzionanti nella v0.3 (switch + or, numeri scritti).
 #
-#  (1) BUCO DELLE "unclassified". In v0.3 costavano 1.3, cioe' quasi
-#      quanto una carrareccia (1.0). Ma la pagina le classifica come
-#      ASFALTO (regola territoriale: in Monferrato le comunali minori
-#      sono quasi sempre asfaltate). Risultato: il motore le sceglieva
-#      credendole gratis, e la mappa le dipingeva di rosso -> "troppo
-#      asfalto" e "deviazioni lunghissime". Ora costano come l'asfalto.
-#      NB: residential e living_street erano gia' nel gruppo asfalto;
-#      mancava solo unclassified. Era un buco, non una scelta.
+#  (1) BUCO DELLE "unclassified". In v0.3 costavano 1.3, quasi quanto una
+#      carrareccia (1.0). Ma la pagina le classifica ASFALTO (in Monferrato
+#      le comunali minori sono quasi sempre asfaltate). Il motore le
+#      sceglieva credendole gratis e la mappa le dipingeva di rosso: da qui
+#      "troppo asfalto" e le deviazioni lunghissime. Ora costano come
+#      l'asfalto. residential e living_street c'erano gia'; mancava solo
+#      unclassified: era un buco, non una scelta.
 #
-#  (2) ASFALTO GRADUATO. Prima ogni strada asfaltata costava uguale.
-#      Quando l'asfalto e' inevitabile, ora il motore preferisce la
-#      strada MINORE (comunale stretta) alla provinciale trafficata,
-#      che per una moto da 200 kg e' anche piu' sicura.
+#  (2) PROVA DI STERRATO PRIMA DELL'ASFALTO. Una via con surface o tracktype
+#      che dicono "non pavimentato" resta economica QUALUNQUE sia la sua
+#      classe. Senza questa riga si punirebbero anche le comunali davvero
+#      bianche: l'errore opposto.
 #
-#  Il costo e' sempre AL METRO (costfactor) e initialcost resta 0:
-#  cosi' il motore minimizza i METRI di asfalto, non il numero di
-#  ingressi. Se avesse una penalita' fissa all'ingresso, preferirebbe
-#  una sola deviazione lunghissima a tre attraversamenti brevi.
+#  (3) ASFALTO GRADUATO. Quando l'asfalto e' inevitabile il motore prende la
+#      strada MINORE invece della provinciale: per 200 kg e' anche piu'
+#      sicura. I valori sono scritti (niente moltiplicazioni): 25 per le
+#      comunali asfaltate, 37.5 tertiary, 50 secondary, 75 statali.
+#
+#  Il costo e' sempre AL METRO e initialcost resta 0: cosi' il motore
+#  minimizza i METRI di asfalto. Con una penalita' fissa all'ingresso
+#  preferirebbe una sola deviazione lunga a tre attraversamenti brevi.
 # ============================================================
 ---context:global
-
 # Quanto "costa" 1 m di asfalto rispetto a 1 m di sterrato.
-# E' l'unica manopola che lo slider moltiplica (x10/25/45/75).
 assign avoid_asphalt = 25
-
-# Strade grandi: peggiori per una moto pesante quando l'asfalto e'
-# inevitabile (traffico, velocita'). Scalano insieme allo slider.
-assign asphalt_tertiary  = multiply avoid_asphalt 1.5
-assign asphalt_secondary = multiply avoid_asphalt 2
-assign asphalt_main      = multiply avoid_asphalt 3
-
 assign validForBikes = true
 assign validForFoot  = false
 assign validForCars  = false
-
 # la pendenza ora conta: le salite hanno un costo
-# NOTA: uphillcost 250 e' alto. In collina (Langhe/Monferrato) lo sterrato
-# e' spesso piu' ripido dell'asfalto di fondovalle, quindi questo valore
-# spinge un po' verso il piano = verso l'asfalto. Se dopo la v0.4 vedi
-# ancora troppo asfalto in zone mosse, prova a scendere a 120-150.
+# NOTA: 250 e' alto. In Langa/Monferrato lo sterrato e' spesso piu' ripido
+# dell'asfalto di fondovalle, quindi spinge verso il piano = verso l'asfalto.
+# Se dopo la v0.5 resta troppo asfalto in zone mosse, prova 120-150.
 assign uphillcost     = 250
 assign uphillcutoff   = 12
 assign downhillcost   = 200
 assign downhillcutoff = 14
-
 assign turnInstructionMode = 0
-
 ---context:way
 assign turncost = 0
-
-# PROVA DI STERRATO: se i tag dicono esplicitamente che il fondo non e'
-# pavimentato, la via resta economica QUALUNQUE sia la classe della strada.
-# Va valutata PRIMA del blocco asfalto, altrimenti una "unclassified" con
-# surface=gravel verrebbe punita come se fosse asfaltata.
-assign is_unpaved =
-  or surface=gravel|fine_gravel|compacted|unpaved|ground|dirt|earth|grass|sand|mud|pebblestone|rock|woodchips
-     tracktype=grade2|grade3|grade4|grade5
-
-# PROVA DI ASFALTO: fondo pavimentato dichiarato, oppure grade1.
-assign is_paved =
-  or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone
-     tracktype=grade1
-
 assign costfactor
-
-  # --- non percorribili con una moto pesante ---
-  switch or ford=yes ford=unknown                            10000
-  switch highway=footway|pedestrian|steps                    10000
-
-  # --- prova di sterrato: vince su tutto il resto ---
-  switch is_unpaved                                          1
-
-  # --- asfalto graduato: piu' grande la strada, piu' cara ---
-  switch and is_paved highway=motorway|trunk|primary         asphalt_main
-  switch highway=motorway|trunk|primary                      asphalt_main
-  switch highway=secondary                                   asphalt_secondary
-  switch highway=tertiary                                    asphalt_tertiary
-
-  # comunali minori: asfaltate salvo prova contraria (gia' esclusa sopra
-  # da is_unpaved). E' la riga che in v0.3 mancava per unclassified.
-  switch highway=unclassified|residential|living_street      avoid_asphalt
-
-  # qualunque altra via con fondo pavimentato dichiarato
-  switch is_paved                                            avoid_asphalt
-
-  # --- sterrato e vie minori ---
-  switch access=private|no                                   8
-  switch tracktype=grade5                                    2
-  switch highway=track|bridleway                             1
-  switch highway=service                                     2
-  switch highway=path                                        3
-  switch highway=cycleway                                    6
+  switch or ford=yes ford=unknown                                                    10000
+  switch highway=footway|pedestrian|steps                                            10000
+  switch or surface=gravel|fine_gravel|compacted|unpaved|ground|dirt|earth|grass|sand|mud|pebblestone|rock tracktype=grade2|grade3|grade4|grade5   1
+  switch highway=motorway|trunk|primary                                              75
+  switch highway=secondary                                                           50
+  switch highway=tertiary                                                            37.5
+  switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=unclassified|residential|living_street   avoid_asphalt
+  switch access=private|no                                                           8
+  switch tracktype=grade5                                                            2
+  switch highway=track|bridleway                                                     1
+  switch highway=service                                                             1.3
+  switch highway=path                                                                3
+  switch highway=cycleway                                                            6
   1.3
-
 ---context:node
 assign initialcost = 0
