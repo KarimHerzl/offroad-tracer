@@ -1,6 +1,33 @@
 # ============================================================
 #  offroad-legal-25.brf  -  "Massimizza sterrato" LEGALE  -  Moto 200 kg
-#  Tracciatori Carbonari - profilo BRouter (v0.8)
+#  Tracciatori Carbonari - profilo BRouter (v0.9)
+#  Posizione slider: 25  (avoid_asphalt = 25)
+#
+#  v0.9 - GERARCHIA DELL'ASFALTO ANCORATA ALLO SLIDER.
+#  Fino alla v0.8 i tre livelli dell'asfalto erano numeri FISSI - 37.5 per la
+#  tertiary, 50 per la secondary, 75 per le statali - scelti quando
+#  avoid_asphalt valeva 25. A 25 la scala regge. Sopra 37.5 si ROVESCIA:
+#  la comunale costa piu' della provinciale, e piu' chiedi al motore di
+#  evitare l'asfalto piu' lo spingi sulle strade grandi. Con lo slider a 45
+#  la comunale costava 45 e la tertiary 37.5; a 75 avrebbe preferito perfino
+#  la secondaria. Su 200 kg e' esattamente il contrario di quello che serve.
+#  Misurato su percorso reale (Inghilterra, slider 45): 7359 m di tertiary a
+#  costo 37500 contro 9520 m di unclassified a 45000.
+#  Ora i tre livelli sono multipli di avoid_asphalt, quindi il rapporto resta
+#  identico a qualunque posizione dello slider:
+#      tertiary  = avoid_asphalt x 1.5
+#      secondary = avoid_asphalt x 2
+#      statali   = avoid_asphalt x 3
+#  A 25 i valori coincidono ESATTAMENTE con quelli vecchi (37.5 / 50 / 75):
+#  a slider centrale il comportamento non cambia di una virgola.
+#
+#  NOTA DI METODO: multiply e le variabili intermedie FUNZIONANO. Erano
+#  annotate come rifiutate da BRouter, ma provate sul parser vero
+#  (btools.expressions.IntegrityCheckProfile del jar 1.7.9) passano senza
+#  storie. Anche l'operatore "and" passa. I 500 che avevano fatto nascere
+#  quell'annotazione avevano un'altra causa: quasi certamente un valore non
+#  canonico, cioe' un sinonimo, che BRouter rifiuta mentre accetta valori
+#  del tutto sconosciuti. Tenerlo a mente per i prossimi profili.
 #
 #  v0.8 - CICLABILE SPOSTATA IN CIMA. In v0.7 la riga highway=cycleway=10000
 #  c'era, ma stava DOPO la "prova di sterrato": una ciclabile su strada bianca
@@ -15,33 +42,22 @@
 #  alla provinciale). La pagina le marca NERE (vietate) da sempre; il profilo
 #  no. Ora costano 10000 come i marciapiedi: escluse.
 #
-#  v0.6 - GERARCHIA DI PREFERENZA ESPLICITA.
-#  Fino alla v0.5 sterrato e terra battuta costavano uguale (1) e la
-#  mulattiera (bridleway) costava 1 come una carrareccia: nessun ordine.
-#  Ora l'ordine e' scritto nei numeri, dal migliore al peggiore:
-#
+#  v0.6 - GERARCHIA DI PREFERENZA ESPLICITA. L'ordine, dal migliore al peggiore:
 #     1.0   sterrato compatto (ghiaia, compacted, grade2/3)
 #     1.3   carrareccia senza tag  |  terra battuta (ground/dirt/earth)
 #     2.0   grade4  |  service
 #     3.0   grade5
 #     4.0   fondi molli: erba, sabbia, fango (con 200 kg si affonda)
 #     9.0   MULATTIERA / SENTIERO (path, bridleway) - l'incognita
-#    25   asfalto comunale
-#    37.5 tertiary   50 secondary   75 statali
-#
-#  Cosi' il motore prova nell'ordine: sterrato -> terra -> fondi molli ->
-#  mulattiera -> asfalto. La mulattiera resta PREFERITA all'asfalto (9 < 25),
-#  ma smette di essere scelta al posto di una strada bianca disponibile:
-#  prima era 1, cioe' equivalente. E alzando lo slider l'asfalto cresce
-#  mentre la mulattiera resta a 9: con "Rifai" il motore passa prima per la
-#  mulattiera, e ricorre all'asfalto solo dove sterrato e mulattiera mancano.
+#    poi l'asfalto, graduato come sopra.
+#  La mulattiera resta PREFERITA all'asfalto, ma smette di essere scelta al
+#  posto di una strada bianca disponibile.
 #
 #  Restano dalla v0.5:
 #  - "unclassified" nel gruppo asfalto (era il buco che produceva i lunghi
 #    tratti rossi: costava 1.3 e il motore la sceglieva credendola bianca)
 #  - prova di sterrato valutata PRIMA dell'asfalto, cosi' una comunale con
 #    surface non pavimentato resta economica
-#  - asfalto graduato: quando e' inevitabile si preferisce la strada minore
 #  - costo AL METRO e initialcost 0: si minimizzano i METRI di asfalto
 #  - variante LEGALE: access=private/no esclusa del tutto, e valutata
 #    PER PRIMA (in v0.3 stava dopo l'asfalto, quindi una privata
@@ -49,6 +65,9 @@
 # ============================================================
 ---context:global
 assign avoid_asphalt = 25
+assign costo_tertiary  = multiply avoid_asphalt 1.5
+assign costo_secondary = multiply avoid_asphalt 2
+assign costo_primary   = multiply avoid_asphalt 3
 assign validForBikes = true
 assign validForFoot  = false
 assign validForCars  = false
@@ -65,7 +84,7 @@ assign turncost = 0
 assign costfactor
   switch or ford=yes ford=unknown                                                    10000
   switch highway=footway|pedestrian|steps                                            10000
-  switch highway=cycleway                                                    10000
+  switch highway=cycleway                                                            10000
   switch access=private|no                                                           10000
   # --- MULATTIERE E SENTIERI: valutati PRIMA del fondo, altrimenti un sentiero
   # con surface=ground verrebbe premiato come una strada in terra battuta.
@@ -76,10 +95,11 @@ assign costfactor
   switch surface=grass|sand|mud                                                      4
   switch tracktype=grade4                                                            2
   switch tracktype=grade5                                                            3
-  # --- asfalto graduato (la strada minore e' preferita alla provinciale)
-  switch highway=motorway|trunk|primary                                              75
-  switch highway=secondary                                                           50
-  switch highway=tertiary                                                            37.5
+  # --- asfalto graduato: la strada minore e' sempre preferita alla provinciale,
+  # qualunque sia la posizione dello slider (v0.9)
+  switch highway=motorway|trunk|primary                                              costo_primary
+  switch highway=secondary                                                           costo_secondary
+  switch highway=tertiary                                                            costo_tertiary
   switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=unclassified|residential|living_street   avoid_asphalt
   # --- resto
   switch highway=track                                                               1.3
