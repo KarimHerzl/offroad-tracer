@@ -1,7 +1,8 @@
 # ============================================================
 #  Offroad Planner — server BRouter per il cloud (Render)
 #  Contiene: BRouter + tessere dati (Nord/Centro Italia, arco
-#  alpino, Francia centro-orientale, Inghilterra sud e Galles)
+#  alpino, Francia centro-orientale, Inghilterra sud e Galles,
+#  Inghilterra orientale)
 #  + profili "offroad-*".
 #  Un nginx davanti fa da proxy e risolve la faccenda CORS.
 # ============================================================
@@ -27,10 +28,17 @@ RUN mkdir -p segments4 profiles2 customprofiles
 #      E0_N40  : Cévennes, Tarn, Pirenei orientali          <-- aggiunta
 #      W5_N50  : Inghilterra centro-sud e Galles a ovest di Greenwich
 #                (Ridgeway, Wessex, Cotswolds, Peak District, Snowdonia,
-#                 Isola di Man). Aggiunta il 31/07/2026 <-- aggiunta ora
-#    Non coperti: Bretagna/Normandia/nord Francia (servono W5_N45, E0_N50).
-#    Per il resto del Regno Unito servirebbero: E0_N50 (Kent, Sussex, East
-#    Anglia, cioe' a est di Greenwich), W10_N50 (Cornovaglia, Galles
+#                 Isola di Man). Aggiunta il 31/07/2026
+#      E0_N50  : Inghilterra a EST di Greenwich - Kent, Sussex orientale,
+#                Essex, East Anglia, Lincolnshire. Serve a chi parte da
+#                Londra o dal lato est: senza, li BRouter risponde 400 con
+#                "datafile E0_N50.rd5 not found".  <-- aggiunta ora
+#                NB: copre anche il Passo di Calais e le Fiandre, quindi da
+#                oggi un percorso Calais-Dunkerque verrebbe calcolato. Il
+#                profilo pero' resta quello italiano, perche' la scelta si
+#                fa sul punto di partenza e Calais e' escluso dal riquadro UK.
+#    Non coperti: Bretagna/Normandia (serve W5_N45).
+#    Per il resto del Regno Unito servirebbero: W10_N50 (Cornovaglia, Galles
 #    occidentale), W5_N55 (Inghilterra del nord, Lowlands scozzesi).
 #    Ogni tessera in piu' pesa su disco e RAM: sul piano gratuito di Render
 #    lo spazio e' stretto, e W5_N50 e' densa perche' contiene Londra.
@@ -43,7 +51,8 @@ RUN cd segments4 \
     && wget -q https://brouter.de/brouter/segments4/E10_N40.rd5 \
     && wget -q https://brouter.de/brouter/segments4/E0_N45.rd5 \
     && wget -q https://brouter.de/brouter/segments4/E0_N40.rd5 \
-    && wget -q https://brouter.de/brouter/segments4/W5_N50.rd5
+    && wget -q https://brouter.de/brouter/segments4/W5_N50.rd5 \
+    && wget -q https://brouter.de/brouter/segments4/E0_N50.rd5
 # 4) il NOSTRO profilo
 COPY offroad-*.brf profiles2/
 # 5) proxy nginx + avvio
