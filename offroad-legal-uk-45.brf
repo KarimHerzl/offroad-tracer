@@ -1,0 +1,124 @@
+# ============================================================
+#  offroad-legal-uk-45.brf  -  "Massimizza sterrato" LEGALE  -  Inghilterra
+#  Tracciatori Carbonari - profilo BRouter (uk v1.0, 31/07/2026)
+#
+#  PERCHE' UN FILE SEPARATO E NON UNA PATCH A offroad-legal.
+#  In Italia il diritto di transito si legge (quasi sempre) da UNA chiave:
+#  access. In Inghilterra e Galles no. Li' esiste la "definitive map", un
+#  registro legale dei diritti di passaggio, e il diritto e' DIVERSO PER
+#  MODO DI TRASPORTO sulla stessa via: un sentiero puo' essere aperto a
+#  piedi, a cavallo e in bici, e vietato ai motoveicoli. Per questo i
+#  britannici NON scrivono access=private (che chiuderebbe a tutti): usano
+#  motor_vehicle=private e il tag designation. Un profilo che interroga solo
+#  access e' strutturalmente cieco su questi dati - non gli manca una riga,
+#  gli manca la domanda giusta.
+#
+#  MISURATO SUL CAMPO (Burghfield Common -> Basingstoke, 21,3 km, 31/07/2026,
+#  traccia sovrapposta ai dati OSM del corridoio):
+#    - 3902 m su vie VIETATE ai motoveicoli, il 46% dello sterrato prodotto
+#    - di questi, 1375 m avevano ricevuto costo 1.0, il MINIMO del profilo:
+#      carrarecce con motor_vehicle=private o =no e fondo compatto, che la
+#      "prova di sterrato" premiava come le migliori strade disponibili
+#    - altri 1599 m a costo 1.3, fra cui 907 m di restricted_byway con
+#      surface=dirt e motor_vehicle=private
+#    - i "campi" segnalati erano 1434 m di highway=path senza designation
+#      piu' 409 m di public_footpath dichiarato: linee giuridiche sull'arato,
+#      mappate perche' esiste il diritto di passaggio a piedi, non perche'
+#      esista una traccia al suolo
+#  E' lo stesso schema del Sentiero della Bonifica (v0.7/v0.8): l'esclusione
+#  arrivava DOPO la valutazione del fondo. Qui l'esclusione non c'era affatto.
+#
+#  CLASSIFICA DEI DIRITTI IN INGHILTERRA E GALLES:
+#    public_footpath      - a piedi. VIETATO ai motoveicoli.
+#    public_bridleway     - a piedi, a cavallo, in bici. VIETATO ai motoveicoli.
+#    restricted_byway     - veicoli NON a motore. VIETATO ai motoveicoli.
+#    byway_open_to_all_traffic (BOAT) - AMMESSO. E' l'unico sterrato su cui
+#      hai davvero diritto di transito, ed e' merce rara: nel corridoio
+#      misurato ce n'erano 2,1 km su 753 km di rete mappata.
+#
+#  ATTENZIONE ALLA SCOZIA: il Land Reform Act garantisce l'accesso
+#  responsabile a piedi e in bici, NON ai veicoli a motore, e non usa la
+#  definitive map. Questo profilo NON e' valido a nord del confine.
+#  (Al momento e' accademico: la tessera W5_N50 copre Inghilterra e Galles.)
+#
+#  NUMERO NEL NOME: come per i profili italiani, la pagina chiede il file
+#  col numero dello slider. Questo e' il -45. Se il comportamento convince,
+#  se ne fanno le copie -10 / -25 / -75 cambiando solo avoid_asphalt.
+# ============================================================
+---context:global
+assign avoid_asphalt = 45
+assign validForBikes = true
+assign validForFoot  = false
+assign validForCars  = false
+# Lasciati identici al profilo italiano di proposito: cambiare una cosa alla
+# volta. In Inghilterra il rilievo e' dolce e questi valori pesano meno che
+# in Langa, ma se dovessero spingere troppo verso il fondovalle asfaltato
+# si scende a 120-150 DOPO aver verificato le esclusioni.
+assign uphillcost     = 250
+assign uphillcutoff   = 12
+assign downhillcost   = 200
+assign downhillcutoff = 14
+assign turnInstructionMode = 0
+---context:way
+assign turncost = 0
+assign costfactor
+  # ==========================================================
+  #  BLOCCO 1 - ESCLUSIONI. Tutte qui sopra, prima di qualunque
+  #  valutazione del fondo: negli switch vince il PRIMO che scatta.
+  # ==========================================================
+  switch or ford=yes ford=unknown                                                    10000
+  switch highway=footway|pedestrian|steps|busway|construction|proposed               10000
+  switch highway=cycleway                                                            10000
+  # in Inghilterra e Galles il bridleway e' SEMPRE chiuso ai motoveicoli,
+  # anche quando manca il tag designation
+  switch highway=bridleway                                                           10000
+  # la definitive map
+  switch designation=public_footpath|public_bridleway|restricted_byway               10000
+  # il divieto per modo di trasporto: e' QUESTA la chiave che mancava.
+  # 1614 m del percorso misurato passavano di qui indisturbati.
+  switch motor_vehicle=no|private|agricultural|forestry|permit|customers             10000
+  switch motorcycle=no|private                                                       10000
+  switch vehicle=no|private                                                          10000
+  switch access=private|no                                                           10000
+  # ==========================================================
+  #  BLOCCO 2 - fondi molli PRIMA del premio ai byway: con 200 kg
+  #  si affonda anche dove il transito e' pienamente legale.
+  # ==========================================================
+  switch surface=grass|sand|mud                                                      4
+  # ==========================================================
+  #  BLOCCO 3 - PREMIO. Il BOAT e' l'obiettivo del profilo: costo minimo,
+  #  qualunque sia il resto dei tag (i fondi molli li ha gia' presi sopra).
+  #  Sta prima del blocco dei path perche' alcuni BOAT sono taggati
+  #  highway=path: il diritto vince sul tipo di via.
+  # ==========================================================
+  switch designation=byway_open_to_all_traffic                                       1
+  # ==========================================================
+  #  BLOCCO 4 - il path inglese NON e' la mulattiera piemontese.
+  #  Da noi un path e' quasi sempre una mulattiera con un letto fisico, e lo
+  #  valutiamo 9 (caro ma percorribile). Qui, senza designation, non conferisce
+  #  alcun diritto di transito a motore ed e' spesso una linea sul campo arato.
+  #  Escluso. I path che un diritto ce l'hanno sono gia' passati dal BLOCCO 3.
+  # ==========================================================
+  switch highway=path                                                                10000
+  # ==========================================================
+  #  BLOCCO 5 - gerarchia dei fondi, identica al profilo italiano
+  # ==========================================================
+  switch or surface=gravel|fine_gravel|compacted|pebblestone|unpaved tracktype=grade2|grade3   1
+  switch surface=ground|dirt|earth                                                   1.3
+  switch tracktype=grade4                                                            2
+  switch tracktype=grade5                                                            3
+  # ==========================================================
+  #  BLOCCO 6 - asfalto graduato: la strada minore batte la provinciale
+  # ==========================================================
+  switch highway=motorway|trunk|primary                                              75
+  switch highway=secondary                                                           50
+  switch highway=tertiary                                                            37.5
+  switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=unclassified|residential|living_street   avoid_asphalt
+  # ==========================================================
+  #  BLOCCO 7 - resto
+  # ==========================================================
+  switch highway=track                                                               1.3
+  switch highway=service                                                             2
+  1.3
+---context:node
+assign initialcost = 0
