@@ -1,7 +1,8 @@
 # ============================================================
 #  Offroad Planner — server BRouter per il cloud (Render)
 #  Contiene: BRouter + tessere dati (Nord/Centro Italia, arco
-#  alpino, Francia centro-orientale) + profili "offroad-*".
+#  alpino, Francia centro-orientale, Inghilterra sud e Galles)
+#  + profili "offroad-*".
 #  Un nginx davanti fa da proxy e risolve la faccenda CORS.
 # ============================================================
 FROM eclipse-temurin:17-jre
@@ -15,24 +16,34 @@ RUN wget -q "https://github.com/abrensch/brouter/releases/download/v1.7.9/broute
 # 2) cartelle di lavoro
 RUN mkdir -p segments4 profiles2 customprofiles
 # 3) TESSERE DATI — ogni file copre 5°x5°. Se un percorso tocca anche
-#    solo per un tratto un riquadro non presente, BRouter risponde HTTP 400.
+#    solo per un tratto un riquadro non presente, BRouter risponde HTTP 400
+#    col messaggio "datafile XXX.rd5 not found": e' quello il modo per
+#    capire subito quale tessera manca, senza tirare a indovinare.
 #      E5_N45  : Nord Italia sopra il 45° parallelo, arco alpino, Giura
 #      E5_N40  : Piemonte sud, Liguria, Toscana, Provenza, Corsica
 #      E10_N45 : Veneto, Friuli, Trentino, Austria sud, Slovenia
 #      E10_N40 : Emilia est, Marche, Abruzzo, Adriatico
 #      E0_N45  : Borgogna, Loira, Massiccio Centrale nord   <-- aggiunta
 #      E0_N40  : Cévennes, Tarn, Pirenei orientali          <-- aggiunta
-#    Non coperti: Bretagna/Normandia/nord Francia (servono W5_* e *_N50).
+#      W5_N50  : Inghilterra centro-sud e Galles a ovest di Greenwich
+#                (Ridgeway, Wessex, Cotswolds, Peak District, Snowdonia,
+#                 Isola di Man). Aggiunta il 31/07/2026 <-- aggiunta ora
+#    Non coperti: Bretagna/Normandia/nord Francia (servono W5_N45, E0_N50).
+#    Per il resto del Regno Unito servirebbero: E0_N50 (Kent, Sussex, East
+#    Anglia, cioe' a est di Greenwich), W10_N50 (Cornovaglia, Galles
+#    occidentale), W5_N55 (Inghilterra del nord, Lowlands scozzesi).
 #    Ogni tessera in piu' pesa su disco e RAM: sul piano gratuito di Render
-#    lo spazio e' stretto. Se compaiono crash su percorsi lunghi, togliere
-#    una tessera non usata (es. E10_N40) prima di pensare a un bug.
+#    lo spazio e' stretto, e W5_N50 e' densa perche' contiene Londra.
+#    Se compaiono crash su percorsi lunghi, togliere una tessera non usata
+#    (es. E10_N40) prima di pensare a un bug.
 RUN cd segments4 \
     && wget -q https://brouter.de/brouter/segments4/E5_N45.rd5 \
     && wget -q https://brouter.de/brouter/segments4/E5_N40.rd5 \
     && wget -q https://brouter.de/brouter/segments4/E10_N45.rd5 \
     && wget -q https://brouter.de/brouter/segments4/E10_N40.rd5 \
     && wget -q https://brouter.de/brouter/segments4/E0_N45.rd5 \
-    && wget -q https://brouter.de/brouter/segments4/E0_N40.rd5
+    && wget -q https://brouter.de/brouter/segments4/E0_N40.rd5 \
+    && wget -q https://brouter.de/brouter/segments4/W5_N50.rd5
 # 4) il NOSTRO profilo
 COPY offroad-*.brf profiles2/
 # 5) proxy nginx + avvio
