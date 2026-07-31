@@ -75,7 +75,7 @@ assign costfactor
   # la definitive map
   # il divieto per modo di trasporto: e' QUESTA la chiave che mancava.
   # 1614 m del percorso misurato passavano di qui indisturbati.
-  switch motor_vehicle=no|private|agricultural|forestry|permit|customers             10000
+  switch motor_vehicle=no|private|agricultural|permit                                10000
   switch motorcycle=no|private                                                       10000
   switch vehicle=no|private                                                          10000
   switch access=private|no                                                           10000
