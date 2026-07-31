@@ -47,6 +47,17 @@
 # ============================================================
 ---context:global
 assign avoid_asphalt = 45
+# v1.3 - GERARCHIA DELL'ASFALTO ANCORATA ALLO SLIDER.
+# Prima erano numeri fissi (37.5 / 50 / 75) pensati per avoid_asphalt=25.
+# A 25 il conto tornava; a 45 no: la comunale costava 45 e la provinciale
+# 37.5, quindi il motore PREFERIVA la provinciale alla stradina di campagna.
+# Misurato sul percorso reale: 7359 m di tertiary a costo 37500 contro
+# 9520 m di unclassified a 45000. Ora i tre livelli sono multipli dello
+# slider, cosi' il rapporto resta lo stesso a qualunque posizione.
+# A 25 questi valori coincidono ESATTAMENTE con quelli vecchi.
+assign costo_tertiary  = multiply avoid_asphalt 1.5
+assign costo_secondary = multiply avoid_asphalt 2
+assign costo_primary   = multiply avoid_asphalt 3
 assign validForBikes = true
 assign validForFoot  = false
 assign validForCars  = false
@@ -108,9 +119,9 @@ assign costfactor
   # ==========================================================
   #  BLOCCO 6 - asfalto graduato: la strada minore batte la provinciale
   # ==========================================================
-  switch highway=motorway|trunk|primary                                              75
-  switch highway=secondary                                                           50
-  switch highway=tertiary                                                            37.5
+  switch highway=motorway|trunk|primary                                              costo_primary
+  switch highway=secondary                                                           costo_secondary
+  switch highway=tertiary                                                            costo_tertiary
   switch or surface=asphalt|concrete|paved|paving_stones|sett|cobblestone or tracktype=grade1 highway=unclassified|residential|living_street   avoid_asphalt
   # ==========================================================
   #  BLOCCO 7 - resto
